@@ -1,0 +1,214 @@
+#!/bin/bash
+# Pre-commit hook for Claude Code Review
+
+# Get the project root directory
+# We need this to properly locate config files and other resources
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+cd "$PROJECT_ROOT" || exit 1
+
+# Define colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to log messages
+log_message() {
+    local level="$1"
+    local message="$2"
+    
+    case "$level" in
+        "INFO")
+            echo -e "${BLUE}[INFO]${NC} $message"
+            ;;
+        "SUCCESS")
+            echo -e "${GREEN}[SUCCESS]${NC} $message"
+            ;;
+        "WARNING")
+            echo -e "${YELLOW}[WARNING]${NC} $message"
+            ;;
+        "ERROR")
+            echo -e "${RED}[ERROR]${NC} $message"
+            ;;
+        *)
+            echo "$message"
+            ;;
+    esac
+}
+
+log_message "INFO" "Running pre-commit hook from: $(pwd)"
+
+# Load configuration
+config_file="$PROJECT_ROOT/.claude-code/config.json"
+if [ -f "$config_file" ]; then
+    # Check if pre-commit is enabled
+    if ! grep -q '"enabledHooks".*"pre-commit"' "$config_file"; then
+        log_message "INFO" "Pre-commit hook is disabled in configuration. Skipping review."
+        exit 0
+    fi
+    
+    # Extract file types to review
+    file_types=$(grep -o '"fileTypes":[^]]*]' "$config_file" | grep -o '"[^"]*"' | sed 's/"//g' | tr '\n' '|' | sed 's/|$//' || echo ".ts|.js|.java|.css|.html")
+    if [ -z "$file_types" ]; then
+        file_types=".ts|.js|.java|.cs|.py|.rb|.go|.php|.css|.html|.jsx|.tsx|.groovy|.gsp|.swift|.kt|.c|.cpp|.h|.sh|.ps1|.yml|.yaml|.json|.xml"
+    fi
+    
+    # Extract paths to exclude
+    exclude_paths=$(grep -o '"excludePaths":[^]]*]' "$config_file" | grep -o '"[^"]*"' | sed 's/"//g' | tr '\n' '|' | sed 's/|$//' || echo "node_modules/|dist/|target/")
+    if [ -z "$exclude_paths" ]; then
+        exclude_paths="node_modules/|dist/|target/|bin/|obj/|__pycache__/|build/|.gradle/|venv/|env/|.venv/|.env/|packages/|vendor/|bower_components/"
+    fi
+    
+    # Extract review prompt
+    review_prompt=$(grep -o '"reviewPrompt":"[^"]*"' "$config_file" | sed 's/"reviewPrompt":"//g' | sed 's/"//g' || echo "Review the following code changes for bugs, memory leaks, breaking changes, and best practices issues.")
+    if [ -z "$review_prompt" ]; then
+        review_prompt="You are an expert code reviewer. Review the following code changes for potential issues including bugs, memory leaks, breaking changes, and best practice violations. Consider performance impacts, maintainability concerns, and security implications. Provide a concise summary and list any critical issues found with clear explanations."
+    fi
+else
+    # Default values if config file not found
+    log_message "WARNING" "Configuration file not found. Using default settings."
+    file_types=".ts|.js|.java|.cs|.py|.rb|.go|.php|.css|.html|.jsx|.tsx|.groovy|.gsp|.swift|.kt|.c|.cpp|.h|.sh|.ps1|.yml|.yaml|.json|.xml"
+    exclude_paths="node_modules/|dist/|target/|bin/|obj/|__pycache__/|build/|.gradle/|venv/|env/|.venv/|.env/|packages/|vendor/|bower_components/"
+    review_prompt="You are an expert code reviewer. Review the following code changes for potential issues including bugs, memory leaks, breaking changes, and best practice violations. Consider performance impacts, maintainability concerns, and security implications. Provide a concise summary and list any critical issues found with clear explanations."
+fi
+
+log_message "INFO" "🔍 Running Claude Code Review on staged changes..."
+
+# Get all staged files matching our file types
+log_message "INFO" "Looking for staged files with extensions: $file_types"
+log_message "INFO" "Excluding paths matching: $exclude_paths"
+
+# Get all staged files matching our file types
+if [ -n "$file_types" ]; then
+    staged_files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "($file_types)$" || true)
+else
+    staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
+fi
+
+# Debug information about git diff output
+git_diff_files=$(git diff --cached --name-only)
+log_message "INFO" "All staged files: $git_diff_files"
+
+# Exclude paths if needed
+if [ -n "$exclude_paths" ] && [ -n "$staged_files" ]; then
+    staged_files=$(echo "$staged_files" | grep -v -E "($exclude_paths)" || true)
+fi
+
+if [ -z "$staged_files" ]; then
+    log_message "INFO" "No relevant staged files found. Skipping review."
+    exit 0
+fi
+
+log_message "SUCCESS" "Found staged files to review."
+
+log_message "INFO" "Files to be reviewed:"
+echo "$staged_files"
+
+# Create a temporary directory for staged content
+temp_dir=$(mktemp -d)
+trap "rm -rf $temp_dir" EXIT
+
+# Save staged changes to temp directory
+for file in $staged_files; do
+    # Create directory structure if it doesn't exist
+    file_dir=$(dirname "$file")
+    mkdir -p "$temp_dir/$file_dir"
+    
+    # Extract file content from git
+    git show ":$file" > "$temp_dir/$file" 2>/dev/null || true
+done
+
+# Get git diff for context
+git_diff=$(git diff --cached)
+if [ -z "$git_diff" ]; then
+    log_message "INFO" "No changes detected. Skipping review."
+    exit 0
+fi
+
+# Check if Claude is available and configured
+if ! command -v claude &> /dev/null; then
+    log_message "ERROR" "Claude Code CLI not found. Please install it with: npm install -g @anthropic-ai/claude-code"
+    log_message "INFO" "Skipping code review but allowing commit to proceed."
+    exit 0
+fi
+
+# Run Claude Code review with the diff context
+log_message "INFO" "Running code review with Claude Code..."
+log_message "INFO" "This may take a moment..."
+
+# Create a cleaner prompt with better context
+prompt_file=$(mktemp)
+cat > "$prompt_file" << CLAUDE_PROMPT
+# Code Review
+
+I need you to review the following code changes. This is a pre-commit review to catch issues before they're committed.
+
+## Your Task
+Please review the following git diff and identify:
+1. Potential bugs or logical errors
+2. Memory leaks (especially unsubscribed Observables and event listeners)
+3. Performance issues or inefficient code
+4. Breaking changes that could affect other parts of the application
+5. Best practice violations or maintainability concerns
+6. Security implications
+
+## Git Diff
+$git_diff
+
+## Review Output Format
+Please provide your review in this format:
+
+1. First, a 2-3 sentence summary of the changes
+2. A list of issues found, each with:
+   - Severity (CRITICAL, HIGH, MEDIUM, LOW)
+   - File and line number
+   - Brief explanation of the issue
+   - Suggested fix
+3. Any positive aspects of the code changes
+
+Focus on being concise and actionable. Developers will be seeing this at commit time.
+CLAUDE_PROMPT
+
+# Run claude with the prepared prompt
+log_message "INFO" "Executing Claude CLI to review code..."
+review_result=$(claude -p < "$prompt_file" 2>&1 || echo "Error running Claude Code CLI: $?")
+claude_exit_code=$?
+rm -f "$prompt_file"
+
+# Check if Claude provided a meaningful response
+if [[ $claude_exit_code -ne 0 ]] || [[ "$review_result" == *"Error running Claude Code CLI"* ]]; then
+    log_message "ERROR" "Error running Claude Code CLI (exit code: $claude_exit_code). Output:"
+    log_message "ERROR" "$review_result"
+    log_message "ERROR" "Please check your Claude CLI installation and API key with: claude --version"
+    
+    # Ask developer if they want to proceed despite the error
+    read -p "Do you want to proceed with this commit despite the error? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        log_message "WARNING" "Proceeding with commit despite Claude CLI error."
+        exit 0
+    else
+        log_message "INFO" "Commit aborted due to Claude CLI error."
+        exit 1
+    fi
+fi
+
+log_message "SUCCESS" "Code review completed successfully."
+
+# Display results to developer
+echo "==============================================="
+echo "📋 Claude Code Review Results"
+echo "==============================================="
+echo "$review_result"
+echo "==============================================="
+
+# Ask developer if they want to proceed
+read -p "Do you want to proceed with this commit? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    log_message "INFO" "Commit aborted. Please address the issues and try again."
+    exit 1
+fi
+
+exit 0
