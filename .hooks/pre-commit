@@ -203,12 +203,15 @@ echo "==============================================="
 echo "$review_result"
 echo "==============================================="
 
-# Ask developer if they want to proceed
-read -p "Do you want to proceed with this commit? (y/n) " -n 1 -r
+# Ask developer if they want to proceed - force prompt to appear
+printf "Do you want to proceed with this commit? (y/n) "
+read -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     log_message "INFO" "Commit aborted. Please address the issues and try again."
     exit 1
+else
+    log_message "INFO" "Proceeding with commit despite issues found."
 fi
 
 exit 0
