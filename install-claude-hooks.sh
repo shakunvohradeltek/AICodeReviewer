@@ -359,9 +359,26 @@ if [[ $claude_exit_code -ne 0 ]] || [[ "$review_result" == *"Error running Claud
     log_message "ERROR" "$review_result"
     log_message "ERROR" "Please check your Claude CLI installation and API key with: claude --version"
     
-    # Ask developer if they want to proceed despite the error
-    read -p "Do you want to proceed with this commit despite the error? (y/n) " -n 1 -r
-    echo
+    # Ask developer if they want to proceed despite the error - with improved reliability
+    echo ""
+    echo "Do you want to proceed with this commit despite the error? (y/n)"
+    
+    # Debug info
+    log_message "INFO" "Waiting for user input... (defaulting to 'n' in 30 seconds)"
+    
+    # Set a default answer of 'n' after 30 seconds
+    # Add timeout to prevent hanging in non-interactive environments
+    if [ -t 0 ]; then  # Check if stdin is a terminal
+        # Interactive mode with timeout
+        read -t 30 -n 1 -r REPLY || REPLY="n"
+    else
+        # Non-interactive mode - default to no
+        REPLY="n"
+    fi
+    
+    echo ""
+    log_message "INFO" "User input received: '$REPLY'"
+    
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         log_message "WARNING" "Proceeding with commit despite Claude CLI error."
         exit 0
@@ -380,15 +397,31 @@ echo "==============================================="
 echo "$review_result"
 echo "==============================================="
 
-# Ask developer if they want to proceed - force prompt to appear
-printf "Do you want to proceed with this commit? (y/n) "
-read -n 1 -r
-echo
+# Ask developer if they want to proceed - with improved reliability
+echo ""
+echo "Do you want to proceed with this commit? (y/n)"
+
+# Debug info
+log_message "INFO" "Waiting for user input... (defaulting to 'n' in 30 seconds)"
+
+# Set a default answer of 'n' after 30 seconds
+# Add timeout to prevent hanging in non-interactive environments
+if [ -t 0 ]; then  # Check if stdin is a terminal
+    # Interactive mode with timeout
+    read -t 30 -n 1 -r REPLY || REPLY="n"
+else
+    # Non-interactive mode - default to no
+    REPLY="n"
+fi
+
+echo ""
+log_message "INFO" "User input received: '$REPLY'"
+
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     log_message "INFO" "Commit aborted. Please address the issues and try again."
     exit 1
 else
-    log_message "INFO" "Proceeding with commit despite issues found."
+    log_message "SUCCESS" "Proceeding with commit."
 fi
 
 exit 0
@@ -983,15 +1016,31 @@ echo "==============================================="
 echo "\$review_result"
 echo "==============================================="
 
-# Ask developer if they want to proceed
-printf "Do you want to proceed with this commit? (y/n) "
-read -n 1 -r
-echo
+# Ask developer if they want to proceed - with improved reliability
+echo ""
+echo "Do you want to proceed with this commit? (y/n)"
+
+# Debug info
+log_message "INFO" "Waiting for user input... (defaulting to 'n' in 30 seconds)"
+
+# Set a default answer of 'n' after 30 seconds
+# Add timeout to prevent hanging in non-interactive environments
+if [ -t 0 ]; then  # Check if stdin is a terminal
+    # Interactive mode with timeout
+    read -t 30 -n 1 -r REPLY || REPLY="n"
+else
+    # Non-interactive mode - default to no
+    REPLY="n"
+fi
+
+echo ""
+log_message "INFO" "User input received: '\$REPLY'"
+
 if [[ ! \$REPLY =~ ^[Yy]$ ]]; then
     log_message "INFO" "Commit aborted. Please address the issues and try again."
     exit 1
 else
-    log_message "INFO" "Proceeding with commit despite issues found."
+    log_message "SUCCESS" "Proceeding with commit."
 fi
 
 exit 0
