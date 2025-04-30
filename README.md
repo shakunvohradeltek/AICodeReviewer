@@ -1,6 +1,6 @@
-# AIClaudeReview
+# AICodeReviewer
 
-Git hooks for automated code reviews using Claude AI. Get expert code reviews automatically during your git workflow.
+Git hooks for automated code reviews using Anthropic's Claude-Code. Get expert code reviews automatically during your git workflow.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
