@@ -50,3 +50,8 @@ jspm_packages/
 # Temp directories
 /tmp
 /temp
+
+# Claude Code Review files
+/.hooks/
+/.claude-code/
+install-claude-hooks.ps1

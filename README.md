@@ -37,6 +37,14 @@ Before installing the Git hooks, ensure you have:
    ```
    ./install-claude-hooks.sh
    ```
+   
+**Note for Windows Subsystem for Linux (WSL) users**:
+- The script will detect if you're running in WSL and create a PowerShell script
+- When using WSL with repositories that require authentication:
+  - You may need to reconfigure credentials within WSL
+  - For Azure DevOps/TFS: Use `git config --global credential.helper store` or set up SSH keys
+  - For AWS CodeCommit: Configure AWS credentials in the WSL environment
+  - For other repositories: You may need to re-authenticate within the WSL environment
 
 The installer will:
 - Create a `.claude-code` directory for configuration
@@ -68,10 +76,11 @@ The installation process sets up a custom hooks directory and configures Git to 
 - Creates a `.hooks` directory in your repository root
 - Configures Git to use this directory with `git config core.hooksPath`
 - Places all hooks in this directory rather than in `.git/hooks`
+- The hooks directory and configuration files are gitignored by default
 - This approach ensures hooks are:
   - Repository-specific
-  - Version-controlled
-  - Consistently applied across all development environments
+  - Optional for each developer (not forced on the team)
+  - Consistently applied when installed
   - Easier to maintain and update
 
 ### 1. Pre-commit Hook
@@ -249,11 +258,13 @@ No, the uninstaller only removes the Git hooks and configuration files. The Clau
 ### Why use a custom hooks directory instead of the default `.git/hooks`?
 
 The custom hooks directory approach (.hooks/) provides several advantages:
-- Hooks can be version-controlled (unlike `.git/hooks`)
-- Team members get consistent hooks when cloning the repository
+- Repository-specific configuration
+- Installation is a conscious decision by each developer (opt-in)
 - Works more reliably across different environments
-- Easier to maintain and update for the entire team
-- Prevents accidental hook bypassing that can happen with default hooks
+- Easier to maintain and update
+- Provides a cleaner uninstallation process
+
+Note: The .hooks/ and .claude-code/ directories are gitignored by default, making the hooks truly opt-in for each developer. This ensures nobody gets hooks without explicitly running the installation script.
 
 ### How can I customize what Claude looks for?
 

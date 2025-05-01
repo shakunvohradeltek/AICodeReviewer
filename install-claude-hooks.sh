@@ -18,7 +18,10 @@ OS_TYPE="unknown"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    if grep -q Microsoft /proc/version 2>/dev/null; then
+    # More robust WSL detection that works for both WSL1 and WSL2
+    if grep -q Microsoft /proc/version 2>/dev/null || \
+       grep -q WSL /proc/version 2>/dev/null || \
+       [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]; then
         OS_TYPE="wsl"
     else
         OS_TYPE="linux"
@@ -1100,8 +1103,8 @@ log_message "SUCCESS" "Installation Complete! Your Claude Code Review Git hooks 
 log_message "INFO" "=================================================="
 log_message "INFO" "📋 Usage Notes:"
 log_message "INFO" "- Update configuration in .claude-code/config.json"
-if [[ "$OS_TYPE" == "windows" ]]; then
-    log_message "INFO" "- Windows users can use install-claude-hooks.ps1"
+if [[ "$OS_TYPE" == "windows" || "$OS_TYPE" == "wsl" ]]; then
+    log_message "INFO" "- Windows/WSL users can use install-claude-hooks.ps1"
 fi
 log_message "INFO" "- To bypass hooks for a specific commit: git commit --no-verify"
 log_message "INFO" "- To disable hooks temporarily: edit .claude-code/config.json"

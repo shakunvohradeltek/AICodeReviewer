@@ -15,7 +15,10 @@ OS_TYPE="unknown"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    if grep -q Microsoft /proc/version 2>/dev/null; then
+    # More robust WSL detection that works for both WSL1 and WSL2
+    if grep -q Microsoft /proc/version 2>/dev/null || \
+       grep -q WSL /proc/version 2>/dev/null || \
+       [ -e /proc/sys/fs/binfmt_misc/WSLInterop ]; then
         OS_TYPE="wsl"
     else
         OS_TYPE="linux"
