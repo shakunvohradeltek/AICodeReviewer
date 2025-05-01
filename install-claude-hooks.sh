@@ -147,6 +147,38 @@ if [ ! -d ".claude-code" ]; then
     CONFIG_DIR_CREATED=true
 fi
 
+# Update .gitignore to exclude generated files
+log_message "INFO" "Updating .gitignore file..."
+if [ -f ".gitignore" ]; then
+    # Check if .hooks/ is already in .gitignore
+    if ! grep -q "^/.hooks/" ".gitignore" && ! grep -q "^.hooks/" ".gitignore"; then
+        echo -e "\n# Claude Code Review files\n/.hooks/" >> ".gitignore"
+        log_message "SUCCESS" "Added /.hooks/ to .gitignore"
+    else
+        log_message "INFO" "/.hooks/ already in .gitignore"
+    fi
+    
+    # Check if .claude-code/ is already in .gitignore
+    if ! grep -q "^/.claude-code/" ".gitignore" && ! grep -q "^.claude-code/" ".gitignore"; then
+        echo -e "/.claude-code/" >> ".gitignore"
+        log_message "SUCCESS" "Added /.claude-code/ to .gitignore"
+    else
+        log_message "INFO" "/.claude-code/ already in .gitignore"
+    fi
+    
+    # Check if PowerShell script is already in .gitignore
+    if ! grep -q "^/install-claude-hooks.ps1" ".gitignore" && ! grep -q "^install-claude-hooks.ps1" ".gitignore"; then
+        echo -e "/install-claude-hooks.ps1" >> ".gitignore"
+        log_message "SUCCESS" "Added /install-claude-hooks.ps1 to .gitignore"
+    else
+        log_message "INFO" "/install-claude-hooks.ps1 already in .gitignore"
+    fi
+else
+    log_message "WARNING" ".gitignore file not found, creating new one"
+    echo -e "# Claude Code Review files\n/.hooks/\n/.claude-code/\n/install-claude-hooks.ps1" > ".gitignore"
+    log_message "SUCCESS" "Created .gitignore with Claude Code Review exclusions"
+fi
+
 # Create config file if it doesn't exist
 if [ ! -f ".claude-code/config.json" ]; then
     log_message "INFO" "Creating default configuration file..."
@@ -814,14 +846,14 @@ if (-not (Test-Path ".claude-code")) {
 # Create config file if it doesn't exist
 if (-not (Test-Path ".claude-code\config.json")) {
     Write-ColorLog -Level "INFO" -Message "Creating default configuration file..."
-    $configJson = @"
+    $configJson = @'
 {
     "enabledHooks": ["pre-commit"],
     "fileTypes": [".ts", ".js", ".java", ".cs", ".py", ".rb", ".go", ".php", ".css", ".html", ".jsx", ".tsx", ".groovy", ".gsp", ".swift", ".kt", ".c", ".cpp", ".h", ".sh", ".ps1", ".yml", ".yaml", ".json", ".xml"],
     "excludePaths": ["node_modules/", "dist/", "target/", "bin/", "obj/", "__pycache__/", "build/", ".gradle/", "venv/", "env/", ".venv/", ".env/", "packages/", "vendor/", "bower_components/"],
     "reviewPrompt": "You are an expert code reviewer. Review the following code changes for potential issues including bugs, memory leaks, breaking changes, and best practice violations. Consider performance impacts, maintainability concerns, and security implications. Provide a concise summary and list any critical issues found with clear explanations."
 }
-"@
+'@
     
     try {
         $configJson | Out-File -FilePath ".claude-code\config.json" -Encoding utf8 -NoNewline -ErrorAction Stop
@@ -845,7 +877,7 @@ Write-ColorLog -Level "INFO" -Message "Installing pre-commit hook..."
 # Backup existing hook
 Backup-File ".git\hooks\pre-commit"
 
-$preCommitHook = @"
+$preCommitHook = @'
 #!/bin/sh
 # Pre-commit hook for Claude Code Review
 
@@ -1047,7 +1079,7 @@ else
 fi
 
 exit 0
-"@
+'@
 
 try {
     # Write the pre-commit hook with LF line endings (important for Git hooks)
