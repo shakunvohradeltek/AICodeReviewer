@@ -30,15 +30,16 @@ Before installing the Git hooks, ensure you have:
 
 1. Download the `install-claude-hooks.sh` script
 2. Make it executable:
-   ```
+   ```bash
    chmod +x install-claude-hooks.sh
    ```
 3. Run the installer:
-   ```
+   ```bash
    ./install-claude-hooks.sh
    ```
-   
+
 **Note for Windows Subsystem for Linux (WSL) users**:
+
 - The script will detect if you're running in WSL and create a PowerShell script
 - When using WSL with repositories that require authentication:
   - You may need to reconfigure credentials within WSL
@@ -59,11 +60,11 @@ The installer will:
 1. Download the `install-claude-hooks.ps1` script (created during the install process)
 2. Open PowerShell as Administrator
 3. Enable script execution if needed:
-   ```
+   ```powershell
    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
    ```
 4. Run the installer:
-   ```
+   ```powershell
    .\install-claude-hooks.ps1
    ```
 
@@ -146,13 +147,13 @@ Once installed, the hooks work automatically:
 
 If you need to bypass the hooks for a specific commit:
 
-```
+```bash
 git commit --no-verify -m "Your message"
 ```
 
 Or for pushing:
 
-```
+```bash
 git push --no-verify
 ```
 
@@ -175,11 +176,11 @@ Edit the `.claude-code/config.json` file and change `enabledHooks` to an empty a
 
 1. Download the `uninstall-claude-hooks.sh` script
 2. Make it executable:
-   ```
+   ```bash
    chmod +x uninstall-claude-hooks.sh
    ```
 3. Run the uninstaller:
-   ```
+   ```bash
    ./uninstall-claude-hooks.sh
    ```
 
@@ -194,7 +195,7 @@ The uninstaller will:
 
 1. Download the `uninstall-claude-hooks.ps1` script (created during the uninstall process)
 2. Run in PowerShell:
-   ```
+   ```powershell
    .\uninstall-claude-hooks.ps1
    ```
 
@@ -205,21 +206,21 @@ The uninstaller will:
 ### Hook Not Running
 
 1. Check that the scripts are executable:
-   ```
+   ```bash
    chmod +x .hooks/pre-commit
    chmod +x .hooks/pre-push
    ```
 
 2. Verify hooks are in the correct location:
-   ```
+   ```bash
    ls -la .hooks/
    ```
 
 3. Check that git is configured to use the custom hooks directory:
-   ```
+   ```bash
    git config core.hooksPath
    ```
-   
+
    It should return a path like `/path/to/your/repo/.hooks`
 
 4. Check configuration in `.claude-code/config.json`
@@ -229,7 +230,7 @@ The uninstaller will:
 If the hook can't find Claude Code CLI:
 
 1. Verify it's installed globally:
-   ```
+   ```bash
    claude --version
    ```
 
