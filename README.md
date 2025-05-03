@@ -428,9 +428,9 @@ If the hook can't find Claude Code CLI:
 - **"Error running Claude Code CLI"**: Check your Claude Code installation or authentication
 - **Review times out**: Your diff might be too large, try committing smaller changes
 - **PowerShell syntax errors**: If you encounter syntax errors with the Windows installer:
-  - Try using the `install-claude-hooks-fixed.ps1` script which has improved compatibility
   - Make sure you're running PowerShell (not CMD)
   - Check if you have the latest PowerShell version installed
+  - Run PowerShell as Administrator
 - **IDE Git Integration Not Triggering Hooks**:
   - Verify Git hooks configuration: `git config core.hooksPath` (should return `.git/hooks`)
   - If not set correctly, run: `git config core.hooksPath .git/hooks`
