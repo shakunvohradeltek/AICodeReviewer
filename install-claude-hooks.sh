@@ -195,6 +195,41 @@ EOF
         rollback
     fi
     log_message "SUCCESS" "Created default config file at .claude-code/config.json"
+
+    # Create a detailed review prompt in a separate text file
+    log_message "INFO" "Creating prompt.txt file with detailed review instructions..."
+    cat > ".claude-code/prompt.txt" << 'EOF'
+# Code Review
+
+You are an expert code reviewer. I need you to review the following code changes. This is a pre-commit review to catch issues before they're committed.
+
+## Your Task
+Please review the following git diff and identify:
+1. Potential bugs or logical errors
+2. Memory leaks (especially unsubscribed observables and event listeners)
+3. Performance issues or inefficient code
+4. Breaking changes that could affect other parts of the application
+5. Best practice violations or maintainability concerns
+6. Security implications
+
+## Review Output Format
+Please provide your review in this format:
+
+1. First, a 2-3 sentence summary of the changes
+2. A list of issues found, each with:
+   - Severity (CRITICAL, HIGH, MEDIUM, LOW)
+   - File and line number
+   - Brief explanation of the issue
+   - Suggested fix
+3. Any positive aspects of the code changes
+
+Focus on being concise and actionable. Developers will be seeing this at commit time.
+EOF
+    if [ $? -ne 0 ]; then
+        log_message "ERROR" "Failed to create prompt.txt file."
+        rollback
+    fi
+    log_message "SUCCESS" "Created prompt.txt file with detailed review instructions"
 else
     log_message "SUCCESS" "Configuration file already exists"
 fi
@@ -349,9 +384,32 @@ fi
 log_message "INFO" "Running code review with Claude Code..."
 log_message "INFO" "This may take a moment..."
 
-# Create a cleaner prompt with better context
-prompt_file=$(mktemp)
-cat > "$prompt_file" << CLAUDE_PROMPT
+# Check if prompt.txt exists and use it
+prompt_file="./.claude-code/prompt.txt"
+if [ -f "$prompt_file" ]; then
+    log_message "INFO" "Using prompt from prompt.txt"
+    
+    # Create a temporary file to add the git diff
+    temp_prompt_file=$(mktemp)
+    
+    # Read the content from prompt.txt
+    prompt_content=$(cat "$prompt_file")
+    
+    # Add git diff to the prompt content
+    cat > "$temp_prompt_file" << CLAUDE_PROMPT
+$prompt_content
+
+## Git Diff
+$git_diff
+CLAUDE_PROMPT
+    
+    # Use the temporary file for Claude input
+    prompt_file="$temp_prompt_file"
+else
+    # Create a cleaner prompt with better context if prompt.txt doesn't exist
+    log_message "INFO" "prompt.txt not found, using default prompt"
+    prompt_file=$(mktemp)
+    cat > "$prompt_file" << CLAUDE_PROMPT
 # Code Review
 
 You are an expert code reviewer. I need you to review the following code changes. This is a pre-commit review to catch issues before they're committed.
@@ -381,6 +439,7 @@ Please provide your review in this format:
 
 Focus on being concise and actionable. Developers will be seeing this at commit time.
 CLAUDE_PROMPT
+fi
 
 # Run claude with the prepared prompt
 log_message "INFO" "Executing Claude CLI to review code..."
@@ -473,13 +532,24 @@ if [ $? -ne 0 ]; then
     rollback
 fi
 
-# Configure git to use custom hooks directory
-PROJECT_ROOT=$(pwd)
-git config core.hooksPath "$PROJECT_ROOT/.hooks"
+# Configure git to use standard hooks directory for IDE compatibility
+log_message "INFO" "Configuring Git to use standard hooks directory..."
+git config core.hooksPath .git/hooks
 if [ $? -ne 0 ]; then
-    log_message "ERROR" "Failed to configure git to use custom hooks directory."
+    log_message "ERROR" "Failed to configure git hooks directory."
     rollback
 fi
+log_message "SUCCESS" "Git configured to use .git/hooks directory"
+log_message "INFO" "This configuration ensures hooks work properly in IDEs like VSCode and IntelliJ"
+
+# Copy hooks to the .git/hooks directory
+cp -f .hooks/pre-commit .git/hooks/
+chmod +x .git/hooks/pre-commit
+if [ $? -ne 0 ]; then
+    log_message "ERROR" "Failed to copy hooks to .git/hooks directory."
+    rollback
+fi
+log_message "SUCCESS" "Hooks copied to .git/hooks directory"
 
 log_message "SUCCESS" "Pre-commit hook installed successfully"
 
@@ -727,6 +797,7 @@ fi
 # Create Windows PowerShell installer only if we're on Windows or WSL
 if [[ "$OS_TYPE" == "windows" || "$OS_TYPE" == "wsl" ]]; then
     log_message "INFO" "Creating Windows PowerShell installer script..."
+    # Using a simpler PowerShell script that avoids bash syntax in PowerShell
     cat > install-claude-hooks.ps1 << 'EOF'
 # Claude Code Review Git Hooks Installation Script for Windows
 # Run this script from PowerShell
@@ -880,6 +951,10 @@ Backup-File ".git\hooks\pre-commit"
 $preCommitHook = @'
 #!/bin/sh
 # Pre-commit hook for Claude Code Review
+#
+# Note: This is a bash script that will be executed by Git in the Git Bash environment,
+# even on Windows systems. Git hooks on Windows run in Git Bash (MINGW) not in PowerShell.
+# That's why this script uses bash syntax even though it's created by a PowerShell script.
 
 # Define colors for output
 RED='\033[0;31m'
@@ -921,22 +996,31 @@ if [ -f "\$config_file" ]; then
         exit 0
     fi
     
-    # Extract file types to review
-    file_types=\$(grep -o '"fileTypes":[^]]*]' "\$config_file" | grep -o '"[^"]*"' | sed 's/"//g' | tr '\n' '|' | sed 's/|$//' || echo ".ts|.js|.java|.css|.html")
+    # Extract file types to review - simplified approach
+    file_types=""
+    if grep -q '"fileTypes":' "\$config_file"; then
+        file_types=\$(grep '"fileTypes":' "\$config_file" | cut -d':' -f2 | tr -d '[]" ' | tr ',' '|')
+    fi
     if [ -z "\$file_types" ]; then
         file_types=".ts|.js|.java|.css|.html"
     fi
     
-    # Extract paths to exclude
-    exclude_paths=\$(grep -o '"excludePaths":[^]]*]' "\$config_file" | grep -o '"[^"]*"' | sed 's/"//g' | tr '\n' '|' | sed 's/|$//' || echo "node_modules/|dist/|target/")
+    # Extract paths to exclude - simplified approach
+    exclude_paths=""
+    if grep -q '"excludePaths":' "\$config_file"; then
+        exclude_paths=\$(grep '"excludePaths":' "\$config_file" | cut -d':' -f2 | tr -d '[]" ' | tr ',' '|')
+    fi
     if [ -z "\$exclude_paths" ]; then
         exclude_paths="node_modules/|dist/|target/"
     fi
     
-    # Extract review prompt
-    review_prompt=\$(grep -o '"reviewPrompt":"[^"]*"' "\$config_file" | sed 's/"reviewPrompt":"//g' | sed 's/"//g' || echo "Review the following code changes for bugs, memory leaks, breaking changes, and best practices issues.")
+    # Extract review prompt - simplified approach
+    review_prompt=""
+    if grep -q '"reviewPrompt":' "\$config_file"; then
+        review_prompt=\$(grep '"reviewPrompt":' "\$config_file" | cut -d':' -f2- | tr -d '"' | sed 's/^[ \t]*//')
+    fi
     if [ -z "\$review_prompt" ]; then
-        review_prompt="You are an expert code reviewer. Review the following code changes for potential issues including bugs, memory leaks, breaking changes, and best practice violations. Consider performance impacts, maintainability concerns, and security implications. Provide a concise summary and list any critical issues found with clear explanations."
+        review_prompt="You are an expert code reviewer. Review the code for issues."
     fi
 else
     # Default values if config file not found
@@ -949,6 +1033,7 @@ fi
 log_message "INFO" "🔍 Running Claude Code Review on staged changes..."
 
 # Get all staged files matching our file types
+staged_files=""
 if [ -n "\$file_types" ]; then
     staged_files=\$(git diff --cached --name-only --diff-filter=ACMR | grep -E "(\$file_types)$" || true)
 else

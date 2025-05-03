@@ -178,13 +178,21 @@ if [ -d ".hooks" ]; then
     fi
 fi
 
-# Reset git hooks path to default
-log_message "INFO" "Resetting git hooks path to default..."
-git config --unset core.hooksPath
+# Reset Git hooks path configuration
+log_message "INFO" "Checking Git hooks path configuration..."
+current_hooks_path=$(git config core.hooksPath)
 if [ $? -eq 0 ]; then
-    log_message "SUCCESS" "Git hooks path reset to default"
+    log_message "INFO" "Current Git hooks path is: $current_hooks_path"
+    echo ""
+    read -p "Do you want to reset Git hooks path configuration? (y/n) " reset_hooks_path
+    if [[ $reset_hooks_path =~ ^[Yy]$ ]]; then
+        git config --unset core.hooksPath
+        log_message "SUCCESS" "Reset Git hooks path to default"
+    else
+        log_message "INFO" "Keeping Git hooks path configuration"
+    fi
 else
-    log_message "INFO" "No custom hooks path was set"
+    log_message "INFO" "Git hooks path is not explicitly configured, no need to reset"
 fi
 
 # Check for configuration directory
