@@ -15,35 +15,75 @@ Git hooks for automated code reviews using Anthropic's Claude-Code. Get expert c
 
 ## Prerequisites
 
-Before installing the Git hooks, ensure you have:
+The installation requirements vary by platform:
+
+### For Mac/Linux Users:
 
 1. **Git** (version 2.9+) installed
-   - For Mac/Linux: Typically pre-installed or available via package manager
-   - For Windows: Download from [git-scm.com](https://git-scm.com/)
-   - For WSL: Install Git inside your WSL environment:
-     ```bash
-     sudo apt update && sudo apt install git
-     ```
+   - Typically pre-installed or available via package manager
+   - You'll use the `.sh` scripts for installation
 
 2. **Claude Code CLI** installed:
-   - For Mac/Linux: 
-     ```bash
-     npm install -g @anthropic-ai/claude-code
-     ```
-   - For Windows: 
-     - WSL (Windows Subsystem for Linux) must be installed 
-     - Claude Code CLI must be installed within WSL:
-       ```bash
-       wsl npm install -g @anthropic-ai/claude-code
-       ```
+   ```bash
+   npm install -g @anthropic-ai/claude-code
+   ```
 
-3. **Environment Requirements**:
-   - For Mac/Linux: **Bash** shell
-   - For Windows: **PowerShell** and **WSL** with a Linux distribution (Ubuntu recommended)
+3. **Bash shell** (standard on Mac/Linux)
+
+### For Windows Users:
+
+Windows users have two installation options, with different prerequisites:
+
+#### Option 1: Windows PowerShell Scripts (Recommended)
+
+This approach lets you use Windows Git and IDEs while running Claude in WSL.
+
+1. **Git for Windows** installed
+   - Download from [git-scm.com](https://git-scm.com/)
+   - This is your primary Git environment
+
+2. **WSL (Windows Subsystem for Linux)** installed and configured
+   - Run `wsl --install` in PowerShell as administrator
+   - Install a Linux distribution (Ubuntu recommended)
+
+3. **Node.js and npm in WSL**
+   ```bash
+   wsl sudo apt update && wsl sudo apt install -y nodejs npm
+   ```
+
+4. **Claude Code CLI installed in WSL**
+   ```bash
+   wsl npm install -g @anthropic-ai/claude-code
+   ```
+
+5. **PowerShell** with execution policy that allows scripts
+
+#### Option 2: WSL-Only Approach
+
+This approach requires running Git commands from within WSL.
+
+1. **WSL (Windows Subsystem for Linux)** installed and configured
+
+2. **Git installed in WSL**
+   ```bash
+   sudo apt update && sudo apt install git
+   ```
+
+3. **Node.js and npm in WSL**
+   ```bash
+   sudo apt install -y nodejs npm
+   ```
+
+4. **Claude Code CLI installed in WSL**
+   ```bash
+   npm install -g @anthropic-ai/claude-code
+   ```
+
+NOTE: With Option 2, you must use Git from within WSL only. This approach won't work with Windows Git or IDEs that use Windows Git.
 
 ## Installation
 
-### For Mac, Linux, or Windows with WSL
+### For Mac/Linux Users
 
 1. Download the `install-claude-hooks.sh` script
 2. Make it executable:
@@ -55,75 +95,40 @@ Before installing the Git hooks, ensure you have:
    ./install-claude-hooks.sh
    ```
 
-**Note for Windows Subsystem for Linux (WSL) users**:
-
-- Git must be installed in your WSL environment:
-  ```bash
-  sudo apt update && sudo apt install git
-  ```
-- Two installation options are available for Windows users:
-  
-  1. **Windows Git + WSL Claude (recommended)**: 
-     - Use `install-windows-hooks.ps1` to set up hooks that work with Windows Git but run Claude from WSL
-     - This allows you to use Git from Windows while leveraging Claude in WSL
-     - Requires Git in both Windows and WSL
-  
-  2. **WSL-only approach**:
-     - Use `install-claude-hooks.sh` within WSL
-     - Git commands must be run from the WSL terminal to trigger the hooks correctly
-     - This approach won't work if you use Git from Windows
-
-- The script will detect if you're running in WSL and create PowerShell scripts as needed
-- When using WSL with repositories that require authentication:
-  - You may need to reconfigure credentials within WSL
-  - For Azure DevOps/TFS: Use `git config --global credential.helper store` or set up SSH keys
-  - For AWS CodeCommit: Configure AWS credentials in the WSL environment
-  - For other repositories: You may need to re-authenticate within the WSL environment
-
 The installer will:
 - Create a `.claude-code` directory for configuration
 - Create a `.claude-code/prompt.txt` file with detailed review instructions 
-- Create a `.hooks` directory for custom Git hooks
+- Create a `.hooks` directory for Git hooks
 - Configure Git to use standard hooks directory (.git/hooks) for IDE compatibility
 - Copy hooks to .git/hooks directory for execution
 - Install the pre-commit hook (and optionally pre-push)
 - Create a default configuration file
 - Backup any existing hooks
 
-### For Windows
+### For Windows Users
 
-There are two installation methods available for Windows users, depending on how you want to use Git:
+Windows users have two installation options:
 
 #### Option 1: Windows Git + WSL Claude (Recommended)
 
-This option lets you use Git from Windows while the hooks run Claude in WSL.
+This approach lets you use Windows Git and Windows IDEs while the hooks run Claude in WSL.
 
-1. Make sure you have WSL installed and set up:
-   ```powershell
-   # Install WSL if not already installed
-   wsl --install
-   ```
+1. Ensure you have set up all prerequisites:
+   - Git for Windows
+   - WSL with a Linux distribution
+   - Node.js and npm in WSL
+   - Claude Code CLI in WSL
 
-2. Install required components in WSL:
-   ```powershell
-   # Install Git, Node.js and npm in WSL
-   wsl sudo apt update
-   wsl sudo apt install -y git nodejs npm
-   
-   # Install Claude Code CLI in WSL
-   wsl npm install -g @anthropic-ai/claude-code
-   ```
+2. Download the `install-windows-hooks.ps1` script to your repository root
 
-3. Download the `install-windows-hooks.ps1` script to your repository root
+3. Open PowerShell as Administrator
 
-4. Open PowerShell as Administrator
-
-5. Enable script execution if needed:
+4. Enable script execution if needed:
    ```powershell
    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
    ```
 
-6. Run the installer:
+5. Run the installer:
    ```powershell
    .\install-windows-hooks.ps1
    ```
@@ -133,26 +138,18 @@ This method:
 - Allows you to use Git from Windows natively (Git GUI, IDE integrations, etc.)
 - Runs Claude in WSL when Git hooks are triggered
 - Creates a `.claude-code/prompt.txt` file for customizing the review prompt
-- Configures pre-commit hooks to use the prompt from this file
 - Configures Git to ensure hooks work properly in IDEs like VS Code and IntelliJ
 
-#### Option 2: WSL-only Approach
+#### Option 2: WSL-Only Approach
 
-With this option, you must use Git from within WSL.
+With this approach, you must use Git exclusively from within WSL. This won't work with Windows Git or IDEs that use Windows Git.
 
-1. Make sure you have WSL installed and set up:
-   ```powershell
-   # Install WSL if not already installed
-   wsl --install
-   ```
+1. Start a WSL terminal session
 
-2. Start a WSL terminal session
-
-3. Navigate to your repository and run the installer from within WSL:
+2. Navigate to your repository and run the installer from within WSL:
    ```bash
-   # Install Git and Claude CLI in WSL
-   sudo apt update && sudo apt install -y git nodejs npm
-   npm install -g @anthropic-ai/claude-code
+   # Make sure you've installed the prerequisites in WSL
+   # (Git, Node.js, npm, and Claude CLI)
    
    # Run the shell script installer
    cd /path/to/your/repo
@@ -161,6 +158,8 @@ With this option, you must use Git from within WSL.
    ```
 
 **Important Notes for Windows Users**:
+- Option 1 (PowerShell script) is recommended if you use Windows IDEs and Windows Git
+- Option 2 (WSL-only) is only suitable if you do all your Git operations from within WSL
 - The installers will verify that WSL and Claude Code CLI are properly installed
 - If you experience authentication issues with your repository in WSL:
   - For Azure DevOps/TFS: Configure credentials in WSL with `git config --global credential.helper store`
@@ -304,7 +303,7 @@ Edit the `.claude-code/config.json` file and change `enabledHooks` to an empty a
 
 ## Uninstallation
 
-### For Mac, Linux, or Windows with WSL
+### For Mac/Linux Users
 
 1. Download the `uninstall-claude-hooks.sh` script
 2. Make it executable:
@@ -324,19 +323,22 @@ The uninstaller will:
 - Restore any backed-up hooks if available
 - Provide detailed logs of the uninstallation process
 
-### For Windows
+### For Windows Users
+
+Choose the appropriate uninstallation method based on how you installed:
 
 #### If you used Option 1 (Windows Git + WSL Claude)
 
-1. Use the `uninstall-windows-hooks.ps1` script included in the repository
+1. Use the `uninstall-windows-hooks.ps1` script
 2. Open PowerShell as Administrator 
 3. Run the uninstaller:
    ```powershell
    .\uninstall-windows-hooks.ps1
    ```
 
-The uninstaller will:
+The Windows uninstaller will:
 - Remove the Git hooks from the `.git/hooks` directory
+- Ask if you want to reset Git hooks path configuration 
 - Offer to remove the custom `.hooks` directory
 - Offer to remove the `.claude-code` configuration directory with prompt.txt
 - Offer to clean up Claude-related entries from .gitignore
@@ -358,25 +360,56 @@ The uninstaller will:
 
 ### Hook Not Running
 
+#### For Mac/Linux Users
+
 1. Check that the scripts are executable:
    ```bash
+   chmod +x .git/hooks/pre-commit
    chmod +x .hooks/pre-commit
-   chmod +x .hooks/pre-push
    ```
 
-2. Verify hooks are in the correct location:
+2. Verify hooks are in both locations:
    ```bash
+   ls -la .git/hooks/
    ls -la .hooks/
    ```
 
-3. Check that git is configured to use the custom hooks directory:
+3. Check that git is configured to use the standard hooks directory:
    ```bash
    git config core.hooksPath
    ```
 
-   It should return a path like `/path/to/your/repo/.hooks`
+   It should return `.git/hooks` for IDE compatibility
 
 4. Check configuration in `.claude-code/config.json`
+
+#### For Windows Users (Option 1: Windows Git + WSL Claude)
+
+1. Verify that the hook files exist in the right location:
+   ```powershell
+   Get-ChildItem .git\hooks\
+   ```
+
+2. Make sure WSL is working correctly:
+   ```powershell
+   wsl echo "WSL test"
+   ```
+
+3. Make sure Claude is installed and working in WSL:
+   ```powershell
+   wsl claude --version
+   ```
+
+4. Make sure Node.js is installed in WSL:
+   ```powershell
+   wsl node --version
+   ```
+
+5. Check git hooks path configuration:
+   ```powershell
+   git config core.hooksPath
+   ```
+   It should return `.git/hooks` for IDE compatibility
 
 ### Claude Code CLI Not Found
 
@@ -458,14 +491,25 @@ The pre-commit hook adds a few seconds to the commit process while Claude analyz
 
 ### Does this work with all IDEs and Git clients?
 
-Yes, since it uses standard Git hooks, it works with any IDE or Git client that respects Git hooks. The installer explicitly configures Git to use the standard hooks directory with `git config core.hooksPath .git/hooks`, which ensures better compatibility with IDEs like Visual Studio Code and IntelliJ. 
+Yes, it works with any IDE or Git client that respects Git hooks. The installer explicitly configures Git to use the standard hooks directory with:
+```bash
+git config core.hooksPath .git/hooks
+```
+
+This configuration ensures maximum compatibility with IDEs like Visual Studio Code and IntelliJ. 
+
+For Mac/Linux users, the hooks are placed in both the standard `.git/hooks` location and in a separate `.hooks` directory.
+
+For Windows users:
+- **Option 1 (PowerShell script)**: Hooks are configured to work with Windows Git and Windows IDEs while running Claude in WSL
+- **Option 2 (WSL-only)**: Hooks only work when using Git from within WSL
 
 For some IDEs, you may need to:
 - Restart the IDE after installing hooks
-- Enable Git hooks in the IDE's settings
+- Enable Git hooks in the IDE's settings (e.g., in IntelliJ: Settings → Version Control → Git)
 - Use specific Git commands or commit methods within the IDE
 
-See the troubleshooting section for IDE-specific guidance.
+See the troubleshooting section for more specific guidance.
 
 ## Contributing
 
