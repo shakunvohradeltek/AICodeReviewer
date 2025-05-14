@@ -51,7 +51,7 @@ This approach lets you use Windows Git and IDEs while running Claude in WSL.
    wsl sudo apt update && wsl sudo apt install -y nodejs npm
    ```
    
-   The installer will automatically detect the installed Node.js version in WSL.
+   You can also use NVM for Node.js within WSL, which is fully supported by the installer.
 
 4. **Claude Code CLI installed in WSL**
    ```bash
@@ -136,7 +136,8 @@ This approach lets you use Windows Git and Windows IDEs while the hooks run Clau
    ```
 
 This method:
-- Creates special bridge scripts that connect Windows Git with WSL Claude
+- Creates an ultra-simplified hook script that directly pipes git diff to Claude in WSL
+- Provides compatibility with Node Version Manager (NVM) for Node.js in WSL
 - Allows you to use Git from Windows natively (Git GUI, IDE integrations, etc.)
 - Runs Claude in WSL when Git hooks are triggered
 - Creates a `.claude-code/prompt.txt` file for customizing the review prompt
@@ -401,12 +402,20 @@ Note: The uninstaller doesn't require any Node.js version-specific configuration
 
 3. Make sure Claude is installed and working in WSL:
    ```powershell
+   # For standard Node.js installation:
    wsl claude --version
+
+   # For NVM users:
+   wsl bash -c "source ~/.nvm/nvm.sh && claude --version"
    ```
 
 4. Make sure Node.js is installed in WSL:
    ```powershell
+   # For standard Node.js installation:
    wsl node --version
+
+   # For NVM users:
+   wsl bash -c "source ~/.nvm/nvm.sh && node --version"
    ```
 
 5. Check git hooks path configuration:
@@ -443,10 +452,11 @@ If the hook can't find Claude Code CLI:
   - For VS Code: Try using the command palette for Git operations instead of the GUI buttons
 
 - **Windows Git not triggering hooks with Claude in WSL**:
-  - Make sure you've used the `install-windows-hooks.ps1` script which creates the proper bridge between Windows Git and WSL
-  - Verify that `wsl` command works in your Windows command prompt or PowerShell
+  - Make sure you've used the `install-windows-hooks.ps1` script which creates the direct integration between Windows Git and WSL
+  - Verify that the `wsl` command works in your Windows command prompt or PowerShell
   - Check if the hook scripts are executable in WSL with `wsl ls -la .git/hooks/`
-  - Try running `wsl bash -c "cd $(wsl wslpath "$(pwd)") && claude --version"` to test if Claude can be accessed from WSL
+  - For NVM users, ensure your Node.js is properly configured in WSL
+  - Try running `wsl bash -c "source ~/.nvm/nvm.sh && claude --version"` to test if Claude can be accessed from WSL
 
 ## FAQ
 
