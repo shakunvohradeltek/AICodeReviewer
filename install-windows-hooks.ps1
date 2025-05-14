@@ -64,7 +64,7 @@ $claudeFound = $false
 $claudePath = ""
 
 # Simple approach to check both paths that are known to work
-# Check both /usr/local/bin/claude (your machine) and ~/.nvm/versions/node/v23.11.0/bin/claude (dev's machine)
+# Check both /usr/local/bin/claude and NVM paths with detected Node.js version
 Write-ColorLog -Level "INFO" -Message "Checking known paths for Claude..."
 
 # First check if Claude is in standard PATH (your machine)
@@ -87,26 +87,34 @@ if ($claudeInWSL -and $claudeInWSL -ne '') {
 # Check NVM path (where Claude is actually found in this system)
 if (-not $claudeFound) {
     Write-ColorLog -Level "INFO" -Message "Checking NVM path for Claude..."
-    $nvmClaudePath = "~/.nvm/versions/node/v23.11.0/bin/claude"
-    Write-ColorLog -Level "INFO" -Message "Testing exact NVM path: $nvmClaudePath"
-    $claudeCheck = wsl test -f $nvmClaudePath 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        $claudeFound = $true
-        $claudePath = $nvmClaudePath
-        Write-ColorLog -Level "SUCCESS" -Message "Found Claude Code CLI in NVM path: $claudePath"
-        
-        # Test Claude CLI with the specific path
-        Write-ColorLog -Level "INFO" -Message "Testing Claude CLI in WSL using NVM path..."
-        $claudeVersion = wsl bash -c "$nvmClaudePath --version" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-ColorLog -Level "WARNING" -Message "Claude Code CLI found but not working properly at NVM path. Error: $claudeVersion"
-            # Try with different quoting
-            $claudeVersion = wsl bash -c "'$nvmClaudePath' --version" 2>&1
-            if ($LASTEXITCODE -eq 0) {
-                Write-ColorLog -Level "SUCCESS" -Message "Claude CLI in WSL is working with different quoting: $claudeVersion"
+    
+    # Dynamically detect Node.js version instead of hardcoding
+    $nodeVersion = wsl bash -c "node --version 2>/dev/null | tr -d 'v' || echo ''" 
+    if ($nodeVersion -eq "") {
+        Write-ColorLog -Level "INFO" -Message "Node.js not found in WSL or version cannot be detected"
+    } else {
+        Write-ColorLog -Level "INFO" -Message "Detected Node.js version: $nodeVersion"
+        $nvmClaudePath = "~/.nvm/versions/node/v$nodeVersion/bin/claude"
+        Write-ColorLog -Level "INFO" -Message "Testing dynamic NVM path: $nvmClaudePath"
+        $claudeCheck = wsl test -f $nvmClaudePath 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            $claudeFound = $true
+            $claudePath = $nvmClaudePath
+            Write-ColorLog -Level "SUCCESS" -Message "Found Claude Code CLI in NVM path: $claudePath"
+            
+            # Test Claude CLI with the specific path
+            Write-ColorLog -Level "INFO" -Message "Testing Claude CLI in WSL using NVM path..."
+            $claudeVersion = wsl bash -c "$nvmClaudePath --version" 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-ColorLog -Level "WARNING" -Message "Claude Code CLI found but not working properly at NVM path. Error: $claudeVersion"
+                # Try with different quoting
+                $claudeVersion = wsl bash -c "'$nvmClaudePath' --version" 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    Write-ColorLog -Level "SUCCESS" -Message "Claude CLI in WSL is working with different quoting: $claudeVersion"
+                }
+            } else {
+                Write-ColorLog -Level "SUCCESS" -Message "Claude CLI in WSL is working at NVM path: $claudeVersion"
             }
-        } else {
-            Write-ColorLog -Level "SUCCESS" -Message "Claude CLI in WSL is working at NVM path: $claudeVersion"
         }
     }
 }
@@ -230,10 +238,19 @@ if ($LASTEXITCODE -eq 0 -and $wslUsername -ne "") {
 }
 Write-ColorLog -Level "INFO" -Message "Using WSL home directory: $wslHomeDir"
 
-# First try the known NVM path where Claude is installed on this system
+# First try the NVM path with dynamically detected Node.js version
 # Use ABSOLUTE path for reliability with Windows Git/WSL integration
-$nvmClaudePath = "$wslHomeDir/.nvm/versions/node/v23.11.0/bin/claude"
-Write-ColorLog -Level "INFO" -Message "Testing Claude at absolute NVM path: $nvmClaudePath..."
+$nodeVersion = wsl bash -c "node --version 2>/dev/null | tr -d 'v\n' || echo ''" 
+if ($nodeVersion -eq "") {
+    Write-ColorLog -Level "INFO" -Message "Node.js not found in WSL or version cannot be detected"
+    # Fall back to checking Claude in PATH since node version can't be detected
+    $nvmClaudePath = "$wslHomeDir/.nvm/versions/node/*/bin/claude"
+} else {
+    Write-ColorLog -Level "INFO" -Message "Detected Node.js version: $nodeVersion"
+    $nvmClaudePath = "$wslHomeDir/.nvm/versions/node/v$nodeVersion/bin/claude"
+}
+
+Write-ColorLog -Level "INFO" -Message "Testing Claude at dynamic NVM path: $nvmClaudePath..."
 $claudeNvmCheck = wsl bash -c "test -f $nvmClaudePath && $nvmClaudePath --version 2>&1 || echo 'Not found'" 
 if ($claudeNvmCheck -and $claudeNvmCheck -ne 'Not found' -and -not ($claudeNvmCheck -match "command not found")) {
     Write-ColorLog -Level "SUCCESS" -Message "Claude is properly installed and working in WSL NVM path: $claudeNvmCheck"
@@ -242,26 +259,65 @@ if ($claudeNvmCheck -and $claudeNvmCheck -ne 'Not found' -and -not ($claudeNvmCh
     Write-ColorLog -Level "INFO" -Message "Using absolute NVM Claude path: $claudePath"
 } else {
     # Try the standard approach as fallback
-    Write-ColorLog -Level "INFO" -Message "Claude not found at absolute NVM path, trying PATH lookup..."
-    $claudeVersionCheck = wsl bash -c "export PATH=/usr/local/bin:/usr/bin:/bin:\$HOME/.nvm/versions/node/v23.11.0/bin:\$PATH; claude --version 2>&1" 
+    Write-ColorLog -Level "INFO" -Message "Claude not found at dynamic NVM path, trying PATH lookup..."
+    
+    # Construct a PATH that includes potential NVM paths
+    # We'll use a separate bash script to avoid PowerShell string interpolation issues
+    $nvmPathScript = @'
+#!/bin/bash
+PATH_WITH_NVM="/usr/local/bin:/usr/bin:/bin"
+NODE_VERSION=$(node --version 2>/dev/null | tr -d 'v\n' || echo "")
+
+if [ -n "$NODE_VERSION" ]; then
+    PATH_WITH_NVM="$PATH_WITH_NVM:$HOME/.nvm/versions/node/v$NODE_VERSION/bin"
+else
+    PATH_WITH_NVM="$PATH_WITH_NVM:$HOME/.nvm/versions/node/*/bin"
+fi
+
+export PATH="$PATH_WITH_NVM:$PATH"
+'@
+    $tempScriptPath = [System.IO.Path]::GetTempFileName() + ".sh"
+    $nvmPathScript | Out-File -Encoding UTF8 $tempScriptPath
+    $wslTempPath = wsl wslpath -u "'$tempScriptPath'"
+    
+    Write-ColorLog -Level "INFO" -Message "Testing Claude with dynamic PATH script at: $wslTempPath"
+    $claudeVersionCheck = wsl bash -c "chmod +x $wslTempPath && source $wslTempPath && claude --version 2>&1"
     if ($LASTEXITCODE -eq 0) {
         Write-ColorLog -Level "SUCCESS" -Message "Claude is properly installed and working in WSL: $claudeVersionCheck"
         # If Claude worked, find its ABSOLUTE path for a more reliable config
-        $exactClaudePath = wsl bash -c "export PATH=/usr/local/bin:/usr/bin:/bin:\$HOME/.nvm/versions/node/v23.11.0/bin:\$PATH; which claude 2>/dev/null | xargs readlink -f || echo '$nvmClaudePath'"
-        $claudePath = $exactClaudePath.Trim()
-        Write-ColorLog -Level "INFO" -Message "Using exact absolute Claude path: $claudePath"
+        $exactClaudePath = wsl bash -c "chmod +x $wslTempPath && source $wslTempPath && which claude 2>/dev/null | xargs readlink -f || echo ''"
+        if ($exactClaudePath -and $exactClaudePath -ne "") {
+            $claudePath = $exactClaudePath.Trim()
+            Write-ColorLog -Level "INFO" -Message "Using exact absolute Claude path: $claudePath"
+        } else {
+            # If we can't get the exact path, but Claude works in PATH, use 'claude' and rely on PATH
+            $claudePath = "claude"
+            Write-ColorLog -Level "INFO" -Message "Using Claude from PATH: $claudePath"
+        }
     } else {
         Write-ColorLog -Level "WARNING" -Message "Claude CLI check failed in WSL: $claudeVersionCheck"
         Write-ColorLog -Level "WARNING" -Message "Your dev team will need to install Claude CLI in WSL with: npm install -g @anthropic-ai/claude-code"
-        # Default to the ABSOLUTE NVM path as we know it exists on this system
-        $claudePath = $nvmClaudePath
-        Write-ColorLog -Level "INFO" -Message "Using absolute NVM path for Claude: $claudePath"
+        # Set a path that will be expanded when used
+        if ($nodeVersion -ne "") {
+            $claudePath = "$wslHomeDir/.nvm/versions/node/v$nodeVersion/bin/claude"
+        } else {
+            $claudePath = "claude"
+        }
+        Write-ColorLog -Level "INFO" -Message "Using fallback Claude path: $claudePath"
     }
+    
+    # Clean up temporary script
+    Remove-Item -Path $tempScriptPath -Force -ErrorAction SilentlyContinue
 }
 
 if (-not (Test-Path ".claude-code\config.json")) {
-    # Use the dynamic path from the detected WSL username
-    $dynamicClaudePath = "$wslHomeDir/.nvm/versions/node/v23.11.0/bin/claude"
+    # Use the dynamically detected path based on Node.js version
+    if ($nodeVersion -ne "") {
+        $dynamicClaudePath = "$wslHomeDir/.nvm/versions/node/v$nodeVersion/bin/claude"
+    } else {
+        # If we couldn't detect Node.js version, use the claude path we found earlier
+        $dynamicClaudePath = $claudePath
+    }
     
     # Log the path being used
     Write-ColorLog -Level "INFO" -Message "Setting config.json with claude path: $dynamicClaudePath"
@@ -486,11 +542,26 @@ log_message "INFO" "Checking for Claude in multiple locations..."
 claude_found=false
 claude_path_to_use=""
 
-# First check specific NVM path - this is where Claude is actually installed
-if [ -f ~/.nvm/versions/node/v23.11.0/bin/claude ]; then
-    claude_found=true
-    claude_path_to_use=~/.nvm/versions/node/v23.11.0/bin/claude
-    log_message "SUCCESS" "Found Claude at NVM path: $claude_path_to_use"
+# First try to detect Node.js version dynamically
+node_version=$(node --version 2>/dev/null | tr -d 'v\n' || echo "")
+if [ -n "$node_version" ]; then
+    # If we can detect Node.js version, check that specific NVM path
+    log_message "INFO" "Detected Node.js version: $node_version"
+    if [ -f ~/.nvm/versions/node/v$node_version/bin/claude ]; then
+        claude_found=true
+        claude_path_to_use=~/.nvm/versions/node/v$node_version/bin/claude
+        log_message "SUCCESS" "Found Claude at NVM path with detected Node version: $claude_path_to_use"
+    fi
+else
+    # If we can't detect Node.js version, try to find Claude in NVM directory wildcards
+    log_message "INFO" "Could not detect Node.js version, checking NVM path patterns"
+    # Try to find Claude in any NVM path
+    nvm_claude_path=$(find ~/.nvm/versions/node -name claude -path "*/bin/claude" 2>/dev/null | head -n 1)
+    if [ -n "$nvm_claude_path" ]; then
+        claude_found=true
+        claude_path_to_use=$nvm_claude_path
+        log_message "SUCCESS" "Found Claude at NVM path by search: $claude_path_to_use"
+    fi
 fi
 
 # Then check /usr/local/bin path if not found yet
@@ -514,12 +585,16 @@ if [ "$claude_found" = false ] && [ -n "$claude_path" ] && [ -f "${claude_path/#
     log_message "SUCCESS" "Found Claude at config path: $claude_path_to_use"
 fi
 
-# If Claude still not found, try the hard-coded NVM path we know works on this system
+# If Claude still not found, try harder to find it in any NVM directory
 if [ "$claude_found" = false ]; then
-    if [ -f ~/.nvm/versions/node/v23.11.0/bin/claude ]; then
+    # This is a more aggressive search in case our simpler methods failed
+    log_message "INFO" "Searching all Node.js version directories for Claude..."
+    # Try to find Claude in any Node version directory with a recursive find
+    nvm_claude_path=$(find ~/.nvm -path "*/bin/claude" -type f 2>/dev/null | head -n 1)
+    if [ -n "$nvm_claude_path" ]; then
         claude_found=true
-        claude_path_to_use=~/.nvm/versions/node/v23.11.0/bin/claude
-        log_message "SUCCESS" "Found Claude at hardcoded NVM path: $claude_path_to_use"
+        claude_path_to_use=$nvm_claude_path
+        log_message "SUCCESS" "Found Claude through full NVM search: $claude_path_to_use"
     fi
 fi
 
@@ -625,8 +700,8 @@ Write-ColorLog -Level "INFO" -Message "Creating Git hook scripts..."
 # This batch script definition will be replaced by the updated version below
 
 # Create a separate PowerShell script for Claude code review
-# Use the detected dynamic path
-$dynamicClaudePath = "$wslHomeDir/.nvm/versions/node/v23.11.0/bin/claude"
+# Use the detected dynamic path that we already set above
+# The dynamicClaudePath variable was already set based on detected Node.js version
 
 $claudePsScript = @"
 # PowerShell script for Claude Code Review
@@ -730,8 +805,9 @@ exit /b 1
 Write-ColorLog -Level "SUCCESS" -Message "Created pre-commit.bat bridge script."
 
 # Now create the shell script hook that Git will call (this is what Git looks for)
-# Use the detected WSL username path
-$claudeNvmPath = "$wslHomeDir/.nvm/versions/node/v23.11.0/bin/claude"
+# Use the dynamically detected Node.js version
+# We already have dynamicClaudePath set up above based on node version detection
+$claudeNvmPath = $dynamicClaudePath
 # Start with a template
 $shellScriptTemplate = @'
 #!/bin/sh

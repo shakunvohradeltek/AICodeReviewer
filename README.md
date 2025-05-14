@@ -50,6 +50,8 @@ This approach lets you use Windows Git and IDEs while running Claude in WSL.
    ```bash
    wsl sudo apt update && wsl sudo apt install -y nodejs npm
    ```
+   
+   The installer will automatically detect the installed Node.js version in WSL.
 
 4. **Claude Code CLI installed in WSL**
    ```bash
@@ -219,7 +221,7 @@ The hooks are configured via the `.claude-code/config.json` file in your reposit
     "enabledHooks": ["pre-commit", "pre-push"],
     "fileTypes": [".ts", ".js", ".java", ".cs", ".py", ".rb", ".go", ".php", ".css", ".html", ".jsx", ".tsx", ".groovy", ".gsp", ".swift", ".kt", ".c", ".cpp", ".h", ".sh", ".ps1", ".yml", ".yaml", ".json", ".xml"],
     "excludePaths": ["node_modules/", "dist/", "target/", "bin/", "obj/", "__pycache__/", "build/", ".gradle/", "venv/", "env/", ".venv/", ".env/", "packages/", "vendor/", "bower_components/"],
-    "claudePath": "/home/username/.nvm/versions/node/v23.11.0/bin/claude"
+    "claudePath": "/home/username/.nvm/versions/node/current/bin/claude"
 }
 ```
 
@@ -343,6 +345,8 @@ The Windows uninstaller will:
 - Offer to remove the `.claude-code` configuration directory with prompt.txt
 - Offer to clean up Claude-related entries from .gitignore
 - Offer to self-delete after completion
+
+Note: The uninstaller doesn't require any Node.js version-specific configuration as it only removes the hooks and configuration.
 
 #### If you used Option 2 (WSL-only Approach)
 
