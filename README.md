@@ -72,11 +72,13 @@ This approach requires running Git commands from within WSL.
    ```
 
 3. **Node.js and npm in WSL**
+
    ```bash
    sudo apt install -y nodejs npm
    ```
 
 4. **Claude Code CLI installed in WSL**
+
    ```bash
    npm install -g @anthropic-ai/claude-code
    ```
@@ -89,6 +91,7 @@ NOTE: With Option 2, you must use Git from within WSL only. This approach won't 
 
 1. Download the `install-claude-hooks.sh` script
 2. Make it executable:
+
    ```bash
    chmod +x install-claude-hooks.sh
    ```
