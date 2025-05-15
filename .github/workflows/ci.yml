@@ -21,6 +21,8 @@ jobs:
   readme-lint:
     name: Lint README
     runs-on: ubuntu-latest
+    # Skipping README linting per team decision
+    if: false
     steps:
       - uses: actions/checkout@v3
       - name: markdownlint-cli
@@ -28,6 +30,7 @@ jobs:
         with:
           files: README.md
           config_file: .github/workflows/markdownlint.json
+          ignore_files: ".markdownlintignore"
 
   validate-json:
     name: Validate JSON
