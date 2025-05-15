@@ -153,7 +153,7 @@ This method:
 - Creates a `.claude-code/prompt.txt` file for customizing the review prompt
 - Configures Git to ensure hooks work properly in IDEs like VS Code and IntelliJ
 
-#### Option 2: WSL-Only Approach
+#### Installation Option 2: WSL-Only Approach
 
 With this approach, you must use Git exclusively from within WSL. This won't work with Windows Git or IDEs that use Windows Git.
 
@@ -237,6 +237,7 @@ The hooks are configured via the `.claude-code/config.json` file in your reposit
     "excludePaths": ["node_modules/", "dist/", "target/", "bin/", "obj/", "__pycache__/", "build/", ".gradle/", "venv/", "env/", ".venv/", ".env/", "packages/", "vendor/", "bower_components/"],
     "claudePath": "/home/username/.nvm/versions/node/current/bin/claude"
 }
+
 ```
 
 For Windows users with WSL, the review prompt is now stored in `.claude-code/prompt.txt`:
@@ -267,6 +268,7 @@ Please provide your review in this format:
 3. Any positive aspects of the code changes
 
 Focus on being concise and actionable. Developers will be seeing this at commit time.
+
 ```
 
 ### Configuration Options
@@ -296,12 +298,14 @@ If you need to bypass the hooks for a specific commit:
 
 ```bash
 git commit --no-verify -m "Your message"
+
 ```
 
 Or for pushing:
 
 ```bash
 git push --no-verify
+
 ```
 
 ### Temporarily Disabling Hooks
@@ -315,6 +319,7 @@ Edit the `.claude-code/config.json` file and change `enabledHooks` to an empty a
     "excludePaths": ["node_modules/", "dist/", "target/", "bin/", "obj/", "__pycache__/", "build/", ".gradle/", "venv/", "env/", ".venv/", ".env/", "packages/", "vendor/", "bower_components/"],
     "reviewPrompt": "You are an expert code reviewer. Review the following code changes for potential issues including bugs, memory leaks, breaking changes, and best practice violations..."
 }
+
 ```
 
 ## Uninstallation
@@ -497,6 +502,7 @@ The installation scripts configure Git to use the standard hooks directory (.git
 
 ```bash
 git config core.hooksPath .git/hooks
+
 ```
 
 This ensures better compatibility with IDEs like Visual Studio Code and IntelliJ that expect hooks to be in the standard location. The hooks are stored in both:
@@ -528,8 +534,10 @@ The pre-commit hook adds a few seconds to the commit process while Claude analyz
 ### Does this work with all IDEs and Git clients?
 
 Yes, it works with any IDE or Git client that respects Git hooks. The installer explicitly configures Git to use the standard hooks directory with:
+
 ```bash
 git config core.hooksPath .git/hooks
+
 ```
 
 This configuration ensures maximum compatibility with IDEs like Visual Studio Code and IntelliJ. 
