@@ -101,6 +101,7 @@ NOTE: With Option 2, you must use Git from within WSL only. This approach won't 
    ```
 
 The installer will:
+
 - Create a `.claude-code` directory for configuration
 - Create a `.claude-code/prompt.txt` file with detailed review instructions 
 - Create a `.hooks` directory for Git hooks
@@ -119,6 +120,7 @@ Windows users have two installation options:
 This approach lets you use Windows Git and Windows IDEs while the hooks run Claude in WSL.
 
 1. Ensure you have set up all prerequisites:
+
    - Git for Windows
    - WSL with a Linux distribution
    - Node.js and npm in WSL
@@ -139,6 +141,7 @@ This approach lets you use Windows Git and Windows IDEs while the hooks run Clau
    ```
 
 This method:
+
 - Creates an ultra-simplified hook script that directly pipes git diff to Claude in WSL
 - Provides compatibility with Node Version Manager (NVM) for Node.js in WSL
 - Allows you to use Git from Windows natively (Git GUI, IDE integrations, etc.)
@@ -164,6 +167,7 @@ With this approach, you must use Git exclusively from within WSL. This won't wor
    ```
 
 **Important Notes for Windows Users**:
+
 - Option 1 (PowerShell script) is recommended if you use Windows IDEs and Windows Git
 - Option 2 (WSL-only) is only suitable if you do all your Git operations from within WSL
 - The installers will verify that WSL and Claude Code CLI are properly installed
@@ -184,6 +188,7 @@ The installation process sets up a custom hooks directory and configures Git to 
 - Copies hooks from .hooks to .git/hooks to ensure they're executed
 - The hooks directory and configuration files are gitignored by default
 - This approach ensures hooks are:
+
   - Repository-specific
   - Optional for each developer (not forced on the team)
   - Consistently applied when installed
@@ -209,6 +214,7 @@ The installation process sets up a custom hooks directory and configures Git to 
 1. You make code changes as usual
 2. You stage changes with `git add`
 3. When you run `git commit`:
+
    - The pre-commit hook intercepts the commit
    - The hook extracts the diff of your staged changes
    - Claude Code CLI analyzes the diff
@@ -322,6 +328,7 @@ Edit the `.claude-code/config.json` file and change `enabledHooks` to an empty a
    ```
 
 The uninstaller will:
+
 - Check Git hooks path configuration and ask if you want to reset it
 - Offer to remove the custom `.hooks` directory
 - Offer to remove the `.claude-code` configuration directory and prompt.txt
@@ -343,6 +350,7 @@ Choose the appropriate uninstallation method based on how you installed:
    ```
 
 The Windows uninstaller will:
+
 - Remove the Git hooks from the `.git/hooks` directory
 - Ask if you want to reset Git hooks path configuration 
 - Offer to remove the custom `.hooks` directory
@@ -478,15 +486,18 @@ No, the uninstaller only removes the Git hooks and configuration files. The Clau
 ### How do the hooks work with IDEs?
 
 The installation scripts configure Git to use the standard hooks directory (.git/hooks) with:
+
 ```bash
 git config core.hooksPath .git/hooks
 ```
 
 This ensures better compatibility with IDEs like Visual Studio Code and IntelliJ that expect hooks to be in the standard location. The hooks are stored in both:
+
 - `.hooks/` directory (as a centralized hooks repository)
 - `.git/hooks/` directory (where git and IDEs expect to find them)
 
 This hybrid approach offers several advantages:
+
 - Compatible with all IDEs and Git clients
 - Repository-specific configuration
 - Installation is a conscious decision by each developer (opt-in)
