@@ -17,20 +17,21 @@ Git hooks for automated code reviews using Anthropic's Claude-Code. Get expert c
 
 The installation requirements vary by platform:
 
-### For Mac/Linux Users:
+### For Mac/Linux Users
 
 1. **Git** (version 2.9+) installed
    - Typically pre-installed or available via package manager
    - You'll use the `.sh` scripts for installation
 
 2. **Claude Code CLI** installed:
+
    ```bash
    npm install -g @anthropic-ai/claude-code
    ```
 
 3. **Bash shell** (standard on Mac/Linux)
 
-### For Windows Users:
+### For Windows Users
 
 Windows users have two installation options, with different prerequisites:
 
@@ -67,6 +68,7 @@ This approach requires running Git commands from within WSL.
 1. **WSL (Windows Subsystem for Linux)** installed and configured
 
 2. **Git installed in WSL**
+
    ```bash
    sudo apt update && sudo apt install git
    ```
@@ -96,6 +98,7 @@ NOTE: With Option 2, you must use Git from within WSL only. This approach won't 
    chmod +x install-claude-hooks.sh
    ```
 3. Run the installer:
+
    ```bash
    ./install-claude-hooks.sh
    ```
@@ -103,7 +106,7 @@ NOTE: With Option 2, you must use Git from within WSL only. This approach won't 
 The installer will:
 
 - Create a `.claude-code` directory for configuration
-- Create a `.claude-code/prompt.txt` file with detailed review instructions 
+- Create a `.claude-code/prompt.txt` file with detailed review instructions
 - Create a `.hooks` directory for Git hooks
 - Configure Git to use standard hooks directory (.git/hooks) for IDE compatibility
 - Copy hooks to .git/hooks directory for execution
@@ -131,11 +134,13 @@ This approach lets you use Windows Git and Windows IDEs while the hooks run Clau
 3. Open PowerShell as Administrator
 
 4. Enable script execution if needed:
+
    ```powershell
    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
    ```
 
 5. Run the installer:
+
    ```powershell
    .\install-windows-hooks.ps1
    ```
@@ -156,6 +161,7 @@ With this approach, you must use Git exclusively from within WSL. This won't wor
 1. Start a WSL terminal session
 
 2. Navigate to your repository and run the installer from within WSL:
+
    ```bash
    # Make sure you've installed the prerequisites in WSL
    # (Git, Node.js, npm, and Claude CLI)
@@ -319,10 +325,12 @@ Edit the `.claude-code/config.json` file and change `enabledHooks` to an empty a
 
 1. Download the `uninstall-claude-hooks.sh` script
 2. Make it executable:
+
    ```bash
    chmod +x uninstall-claude-hooks.sh
    ```
 3. Run the uninstaller:
+
    ```bash
    ./uninstall-claude-hooks.sh
    ```
@@ -343,8 +351,9 @@ Choose the appropriate uninstallation method based on how you installed:
 #### If you used Option 1 (Windows Git + WSL Claude)
 
 1. Use the `uninstall-windows-hooks.ps1` script
-2. Open PowerShell as Administrator 
+2. Open PowerShell as Administrator
 3. Run the uninstaller:
+
    ```powershell
    .\uninstall-windows-hooks.ps1
    ```
@@ -352,7 +361,7 @@ Choose the appropriate uninstallation method based on how you installed:
 The Windows uninstaller will:
 
 - Remove the Git hooks from the `.git/hooks` directory
-- Ask if you want to reset Git hooks path configuration 
+- Ask if you want to reset Git hooks path configuration
 - Offer to remove the custom `.hooks` directory
 - Offer to remove the `.claude-code` configuration directory with prompt.txt
 - Offer to clean up Claude-related entries from .gitignore
@@ -365,6 +374,7 @@ Note: The uninstaller doesn't require any Node.js version-specific configuration
 1. Start a WSL terminal session
 2. Navigate to your repository
 3. Run the uninstaller script:
+
    ```bash
    chmod +x uninstall-claude-hooks.sh
    ./uninstall-claude-hooks.sh
