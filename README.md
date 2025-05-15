@@ -51,6 +51,7 @@ This approach lets you use Windows Git and IDEs while running Claude in WSL.
    ```bash
    wsl sudo apt update && wsl sudo apt install -y nodejs npm
    ```
+
    You can also use NVM for Node.js within WSL, which is fully supported by the installer.
 
 4. **Claude Code CLI installed in WSL**
@@ -96,6 +97,7 @@ NOTE: With Option 2, you must use Git from within WSL only. This approach won't 
    ```bash
    chmod +x install-claude-hooks.sh
    ```
+
 3. Run the installer:
 
    ```bash
@@ -332,6 +334,7 @@ Edit the `.claude-code/config.json` file and change `enabledHooks` to an empty a
    ```bash
    chmod +x uninstall-claude-hooks.sh
    ```
+
 3. Run the uninstaller:
 
    ```bash
@@ -446,6 +449,7 @@ Note: The uninstaller doesn't require any Node.js version-specific configuration
    ```powershell
    git config core.hooksPath
    ```
+
    It should return `.git/hooks` for IDE compatibility
 
 ### Claude Code CLI Not Found
