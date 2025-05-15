@@ -17,7 +17,7 @@ Git hooks for automated code reviews using Anthropic's Claude-Code. Get expert c
 
 The installation requirements vary by platform:
 
-### For Mac/Linux Users
+### Prerequisites for Mac/Linux Users
 
 1. **Git** (version 2.9+) installed
    - Typically pre-installed or available via package manager
@@ -31,7 +31,7 @@ The installation requirements vary by platform:
 
 3. **Bash shell** (standard on Mac/Linux)
 
-### For Windows Users
+### Prerequisites for Windows Users
 
 Windows users have two installation options, with different prerequisites:
 
@@ -51,7 +51,6 @@ This approach lets you use Windows Git and IDEs while running Claude in WSL.
    ```bash
    wsl sudo apt update && wsl sudo apt install -y nodejs npm
    ```
-   
    You can also use NVM for Node.js within WSL, which is fully supported by the installer.
 
 4. **Claude Code CLI installed in WSL**
@@ -89,7 +88,7 @@ NOTE: With Option 2, you must use Git from within WSL only. This approach won't 
 
 ## Installation
 
-### For Mac/Linux Users
+### Installation for Mac/Linux Users
 
 1. Download the `install-claude-hooks.sh` script
 2. Make it executable:
@@ -114,7 +113,7 @@ The installer will:
 - Create a default configuration file
 - Backup any existing hooks
 
-### For Windows Users
+### Installation for Windows Users
 
 Windows users have two installation options:
 
@@ -165,7 +164,6 @@ With this approach, you must use Git exclusively from within WSL. This won't wor
    ```bash
    # Make sure you've installed the prerequisites in WSL
    # (Git, Node.js, npm, and Claude CLI)
-   
    # Run the shell script installer
    cd /path/to/your/repo
    chmod +x install-claude-hooks.sh
@@ -243,7 +241,7 @@ The hooks are configured via the `.claude-code/config.json` file in your reposit
 
 For Windows users with WSL, the review prompt is now stored in `.claude-code/prompt.txt`:
 
-```
+```markdown
 # Code Review
 
 You are an expert code reviewer. I need you to review the following code changes. This is a pre-commit review to catch issues before they're committed.
@@ -321,7 +319,7 @@ Edit the `.claude-code/config.json` file and change `enabledHooks` to an empty a
 
 ## Uninstallation
 
-### For Mac/Linux Users
+### Uninstallation for Mac/Linux Users
 
 1. Download the `uninstall-claude-hooks.sh` script
 2. Make it executable:
@@ -344,7 +342,7 @@ The uninstaller will:
 - Restore any backed-up hooks if available
 - Provide detailed logs of the uninstallation process
 
-### For Windows Users
+### Uninstallation for Windows Users
 
 Choose the appropriate uninstallation method based on how you installed:
 
@@ -386,7 +384,7 @@ Note: The uninstaller doesn't require any Node.js version-specific configuration
 
 ### Hook Not Running
 
-#### For Mac/Linux Users
+#### Troubleshooting for Mac/Linux Users
 
 1. Check that the scripts are executable:
    ```bash
